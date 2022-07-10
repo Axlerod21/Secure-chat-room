@@ -62,10 +62,10 @@ void recv_message() {
 void send_msg() {
 	char message[LENGTH_MSG] = {};
 	char pass_entry[sizeof(password)] = {};
-	int confirmation = 1;
+	int confirmation = 0;
 
 	while(1) {
-		
+
 		str_overwrite_stdout();
 		while (fgets(message, LENGTH_MSG, stdin) != NULL) {
 			str_trim_lf(message, LENGTH_MSG);
@@ -79,23 +79,48 @@ void send_msg() {
 		if (strcmp(message, "/exit") == 0) {
 			break;
 		}
-		if (strcmp(message, "/changeroom") == 0) { //Room change
+		else if (strcmp(message, "/changeroom") == 0) { //Room change
 			send(sockfd, message, LENGTH_MSG, 0);
 			do { //Validation
 				printf("Please enter room number (1 - 99)\n");
 				fgets(room, MAX_ROOM_STRING_LEN, stdin);
 			}while (atoi(room) < 1 || atoi(room) > 99); 
 
+			memset(message, 0, LENGTH_MSG);
 			strcpy(message, room);
+			str_trim_lf(message, LENGTH_MSG);
 			printf("Welcome to room %d\n", atoi(room)); 
 		}
-		if (strcmp(message, "/admin") == 0) { //Ask for admin rights + validation
+		else if (strcmp(message, "/admin") == 0) { //Ask for admin rights + validation
+			send(sockfd, message, LENGTH_MSG, 0);
 			printf("Please enter admin password\n");
-			scanf("%s", &pass_entry);
-			if (strcmp(pass_entry, password) == 0) {				
-				send(sockfd, (void*)confirmation, sizeof(int), 0);
+			fgets(pass_entry, sizeof(password), stdin);
+			if (strcmp(pass_entry, password) == 0) {		
+				confirmation = 1;		
+				send(sockfd, (void*)&confirmation, sizeof(int), 0);
+				printf("Welcome Admin\n");
+				continue;
+			}
+			else {
+				printf("Wrong Password\n");
+				continue;
 			}
 		}
+		else if (strcmp(message, "/broadcast") == 0 && confirmation == 1) { //Broadcast
+			send(sockfd, message, LENGTH_MSG, 0);
+			if (confirmation == 1) {
+				printf("Enter broadcast message:\n");
+				fgets(message, LENGTH_MSG, stdin);
+				str_trim_lf(message, LENGTH_MSG);
+				send(sockfd, message, LENGTH_MSG, 0);
+				continue;
+			}
+		}
+		else if (strcmp(message, "/broadcast") == 0 && confirmation == 0) {
+			printf("Not within regular user rights\n");
+			continue;
+		}
+		
 		send(sockfd, message, LENGTH_MSG, 0);
 	}
 	catch(2);
@@ -130,13 +155,13 @@ int main() {
 
 	//Socket information
 	struct sockaddr_in server_info, client_info;
-    int s_addrlen = sizeof(server_info);
-    int c_addrlen = sizeof(client_info);
-    memset(&server_info, 0, s_addrlen);
-    memset(&client_info, 0, c_addrlen);
-    server_info.sin_family = PF_INET;
-    server_info.sin_addr.s_addr = inet_addr("127.0.0.1");
-    server_info.sin_port = htons(PORT);
+    	int s_addrlen = sizeof(server_info);
+    	int c_addrlen = sizeof(client_info);
+    	memset(&server_info, 0, s_addrlen);
+    	memset(&client_info, 0, c_addrlen);
+    	server_info.sin_family = PF_INET;
+    	server_info.sin_addr.s_addr = inet_addr("127.0.0.1");
+    	server_info.sin_port = htons(PORT);
 
 	//Connect to server
 	int err = connect(sockfd, (struct sockaddr *)&server_info, s_addrlen);
@@ -159,10 +184,10 @@ int main() {
 	}
 
 	pthread_t recv_msg_thread;
-    if (pthread_create(&recv_msg_thread, NULL, (void *) recv_message, NULL) != 0) {
-        printf ("Create pthread error!\n");
-        exit(EXIT_FAILURE);
-    }
+    	if (pthread_create(&recv_msg_thread, NULL, (void *) recv_message, NULL) != 0) {
+        	printf ("Create pthread error!\n");
+        	exit(EXIT_FAILURE);
+    	}
 
 	//Runs until client leaves then prints out "Bye"
 	while (1) {
