@@ -52,6 +52,7 @@ void client_handler(void *p_client)
     char recv_buffer[LENGTH_MSG] = {};
     char send_buffer[LENGTH_MSG] = {};
     ClientList *np = (ClientList *)p_client;
+    ClientList *tmp = root;
 
     //Naming
     if (recv(np->data, nickname, LENGTH_NAME, 0) <= 0 || strlen(nickname) < 2 || strlen(nickname) >= LENGTH_NAME - 1) {
@@ -76,9 +77,7 @@ void client_handler(void *p_client)
         if (strcmp(recv_buffer, "/changeroom") == 0) { //If recieved the changroom command
             recv(np->data, room, sizeof(room), 0);
             np->room_num = atoi(room);
-            printf("1:%s - %s\n", send_buffer, recv_buffer);
             sprintf(send_buffer, "%s joined room %d", np->name, np->room_num);
-            printf("2:%s - %s\n", send_buffer, recv_buffer);
         } 
         else if(strcmp(recv_buffer, "/admin") == 0) { //If recieved the admin command
             recv(np->data, &a_rights, sizeof(int), 0);
@@ -90,12 +89,9 @@ void client_handler(void *p_client)
         }
         else if (strcmp(recv_buffer, "/broadcast") == 0) { //If recieved the broadcast command
             if (np->admin == 1) {
-                printf("hey2\n");
                 recv(np->data, recv_buffer, LENGTH_MSG, 0);
                 sprintf(send_buffer, "Admin Broadcast: %s", recv_buffer);
-                printf("2:%s - %s\n", send_buffer, recv_buffer);
                 broadcast(np, send_buffer);
-                continue;
             }
             continue;
         }
@@ -115,11 +111,9 @@ void client_handler(void *p_client)
             printf("ERROR\n");
             leave_flag = 1;
         }
-        printf("4:%s - %s\n", send_buffer, recv_buffer);
         send_to_all_clients(np,  send_buffer);
     }
 
-    //Removing a node
     close(np->data);
     if(np == now) { //last node
         now = np->prev;
