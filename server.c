@@ -30,14 +30,23 @@ void send_to_all_clients(ClientList *np, char tmp_buffer[]) {
     }
 }
 
-void broadcast() {
+void broadcast(ClientList *np, char tmp_buffer[]) { //Broadcast function
+    ClientList *tmp = root->link;
 
+    while (tmp != NULL) {
+        if(np->data != tmp->data) {
+            printf("Sent to sockfd %d: \"%s\" \n", tmp->data, tmp_buffer);
+            send(tmp->data, tmp_buffer, LENGTH_MSG, 0);
+        }
+        tmp = tmp->link;
+    }
 }
 
 // Function that handles all the clients entering or leaving the chat room
 void client_handler(void *p_client)
 {
 	int leave_flag = 0;
+    int a_rights = 0;
     char room[3] = {};
     char nickname[LENGTH_NAME] = {};
     char recv_buffer[LENGTH_MSG] = {};
@@ -64,12 +73,33 @@ void client_handler(void *p_client)
         }
 
         int recieve = recv(np->data, recv_buffer, LENGTH_MSG, 0);
-        if (strcmp(recv_buffer, "/changeroom") == 0) {
+        if (strcmp(recv_buffer, "/changeroom") == 0) { //If recieved the changroom command
             recv(np->data, room, sizeof(room), 0);
             np->room_num = atoi(room);
+            printf("1:%s - %s\n", send_buffer, recv_buffer);
             sprintf(send_buffer, "%s joined room %d", np->name, np->room_num);
+            printf("2:%s - %s\n", send_buffer, recv_buffer);
         } 
-        else if (recieve == 0 || strcmp(recv_buffer, "/exit") == 0) {
+        else if(strcmp(recv_buffer, "/admin") == 0) { //If recieved the admin command
+            recv(np->data, &a_rights, sizeof(int), 0);
+            if (a_rights == 1) {
+                np->admin = 1;
+                strcat(np->name, "(Admin)");
+                continue;
+            }
+        }
+        else if (strcmp(recv_buffer, "/broadcast") == 0) { //If recieved the broadcast command
+            if (np->admin == 1) {
+                printf("hey2\n");
+                recv(np->data, recv_buffer, LENGTH_MSG, 0);
+                sprintf(send_buffer, "Admin Broadcast: %s", recv_buffer);
+                printf("2:%s - %s\n", send_buffer, recv_buffer);
+                broadcast(np, send_buffer);
+                continue;
+            }
+            continue;
+        }
+        else if (recieve == 0 || strcmp(recv_buffer, "/exit") == 0) { //If recieved the exit command
             printf("%s(IP: %s)(Sockfd: %d) left chatroom: %d.\n", np->name, np->ip, np->data, np->room_num);
             sprintf(send_buffer, "%s(IP: %s) left the chat.", np->name, np->ip);
             leave_flag = 1;
@@ -78,14 +108,15 @@ void client_handler(void *p_client)
             if (strlen(recv_buffer) == 0) {
                 continue;
             }
+            printf("3:%s - %s\n", send_buffer, recv_buffer);
             sprintf(send_buffer, "%s: %s", np->name, recv_buffer);
         }
         else {
             printf("ERROR\n");
             leave_flag = 1;
         }
+        printf("4:%s - %s\n", send_buffer, recv_buffer);
         send_to_all_clients(np,  send_buffer);
-
     }
 
     //Removing a node
