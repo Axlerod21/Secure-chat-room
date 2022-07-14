@@ -4,6 +4,7 @@
 typedef struct ClientNode {
     int data;
     int room_num;
+    int admin;
     struct ClientNode* prev;
     struct ClientNode* link;
     char ip[16];
@@ -17,6 +18,7 @@ ClientList *newNode(int sockfd, char* ip) {
     np->link = NULL;
     strncpy(np->ip, ip, 16);
     strncpy(np->name, "NULL", 5);
+    np->admin = 0;
     return np;
 }
 
