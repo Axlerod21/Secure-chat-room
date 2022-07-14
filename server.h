@@ -1,6 +1,10 @@
 #ifndef LIST
 #define LIST
 
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
 typedef struct ClientNode {
     int data;
     int room_num;
