@@ -1,4 +1,4 @@
-# Cyber-Entry-Project
+# Secure Chat Room
 
 Chat room with multiple rooms to connect to.
 
