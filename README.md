@@ -8,3 +8,5 @@ Commands:\
 /exit - once connected this command will disconnect the current client from the server\
 /changeroom - this command is used to change rooms\
 /admin - this command will ask for the admin password then grant that user admin rights\
+
+## Contributing
